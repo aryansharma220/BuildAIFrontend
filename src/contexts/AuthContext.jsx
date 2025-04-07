@@ -9,7 +9,7 @@ import {
   signInWithPopup,
   updateProfile
 } from '../firebase-config';
-import toast from 'react-hot-toast';  // Assuming you use react-hot-toast
+import toast from 'react-hot-toast'; 
 
 // Create auth context
 const AuthContext = createContext();
@@ -166,8 +166,8 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   };
   
-  // Create user profile in our backend
-  const createUserProfile = async (user, token) => {
+  // Create user profile in our backend with timeout and retry
+  const createUserProfile = async (user, token, retryCount = 0) => {
     if (!token || !user) {
       console.error('Missing user or token for profile creation');
       return null;
@@ -175,30 +175,48 @@ export function AuthProvider({ children }) {
     
     try {
       // Make sure we're using the correct API path and format
-      const apiUrl = import.meta.env.VITE_API_URL.endsWith('/') 
-        ? `${import.meta.env.VITE_API_URL.slice(0, -1)}/api/user/profile`
-        : `${import.meta.env.VITE_API_URL}/api/user/profile`;
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://build-ai-backend.vercel.app';
+      const formattedApiUrl = apiUrl.endsWith('/') 
+        ? `${apiUrl.slice(0, -1)}/api/user/profile`
+        : `${apiUrl}/api/user/profile`;
       
-      console.log('Creating user profile at:', apiUrl);
+      console.log(`Creating user profile at: ${formattedApiUrl} (attempt ${retryCount + 1})`);
       
-      const response = await fetch(apiUrl, {
+      // Use AbortController to handle timeouts
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(formattedApiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        credentials: import.meta.env.VITE_ALLOW_CREDENTIALS === 'true' ? 'include' : 'same-origin',
         body: JSON.stringify({
           displayName: user.displayName || '',
           email: user.email || '',
           photoURL: user.photoURL || '',
           uid: user.uid
-        })
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.status === 504 && retryCount < 2) {
+        console.log(`Gateway timeout received. Retrying... (${retryCount + 1}/3)`);
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return createUserProfile(user, token, retryCount + 1);
+      }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Error creating profile:', response.status, errorData);
+        
+        // For debugging - make an anonymous GET request to check API availability
+        checkApiHealth().catch(e => console.error('API health check failed:', e));
+        
         throw new Error(errorData.message || `Failed to create user profile: ${response.status}`);
       }
       
@@ -207,8 +225,40 @@ export function AuthProvider({ children }) {
       return data;
     } catch (err) {
       console.error('Error creating user profile:', err);
+      
+      // If it was aborted due to timeout and we haven't retried too many times
+      if (err.name === 'AbortError' && retryCount < 2) {
+        console.log(`Request timed out. Retrying... (${retryCount + 1}/3)`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return createUserProfile(user, token, retryCount + 1);
+      }
+      
       toast.error('Failed to initialize your profile. Some features may be limited.');
       return null;
+    }
+  };
+  
+  // Check API health without authentication
+  const checkApiHealth = async () => {
+    const apiUrl = import.meta.env.VITE_API_URL || 'https://build-ai-backend.vercel.app';
+    const healthUrl = `${apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl}/health`;
+    
+    console.log(`Checking API health at: ${healthUrl}`);
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(healthUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      
+      const data = await response.json().catch(() => ({ status: 'error parsing response' }));
+      console.log('API health check result:', { status: response.status, data });
+      
+      return { status: response.status, data };
+    } catch (error) {
+      console.error('API health check error:', error);
+      return { status: 'error', error: error.message };
     }
   };
   
@@ -224,6 +274,14 @@ export function AuthProvider({ children }) {
           
           // Setup token refresh
           setupTokenRefresh(user);
+          
+          // Check if the API is responsive
+          const apiHealth = await checkApiHealth();
+          
+          if (apiHealth.status !== 200) {
+            console.warn('API may be experiencing issues. Health check failed:', apiHealth);
+            toast.warning('Server connection issues detected. Some features may be limited.');
+          }
         } catch (err) {
           console.error('Error getting user token:', err);
         }
@@ -265,7 +323,8 @@ export function AuthProvider({ children }) {
     login,
     signInWithGoogle,
     logout,
-    refreshToken
+    refreshToken,
+    checkApiHealth
   };
   
   return (
