@@ -98,7 +98,7 @@ export const updateUserPreferences = (preferences) => {
  */
 export const fetchCategories = async () => {
   try {
-    const response = await fetch(`${API_URL}/categories`);
+    const response = await fetch(`${API_URL}/api/digests/categories/list`);
     
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
@@ -118,7 +118,7 @@ export const fetchCategories = async () => {
 export const fetchSources = async () => {
   try {
     const baseUrl = API_URL;
-    const response = await fetch(`${baseUrl}/sources`, {
+    const response = await fetch(`${baseUrl}/api/digests/sources/list`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
