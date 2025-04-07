@@ -27,10 +27,11 @@ export const apiRequest = async (endpoint, options = {}) => {
       ...options.headers
     };
     
-    // Make the request
+    // Make the request with credentials included
     const response = await fetch(`${API_URL}/${endpoint.replace(/^\//, '')}`, {
       ...options,
-      headers
+      headers,
+      credentials: 'include'  // Add credentials: include for CORS with authentication
     });
     
     // Check if the response is JSON
@@ -280,7 +281,8 @@ export const addToReadHistory = async (digestId, token) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ digestId })
+      body: JSON.stringify({ digestId }),
+      credentials: 'include'  // Add credentials: include for CORS with authentication
     });
     
     if (!response.ok) {
@@ -311,7 +313,8 @@ export const fetchUserProfile = async (token) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      }
+      },
+      credentials: 'include'  // Add credentials: include for CORS with authentication
     });
     
     if (!response.ok) {
