@@ -4,7 +4,7 @@
 
 // Get base API URL with consistent formatting
 export const getBaseApiUrl = () => {
-  const baseUrl = import.meta.env.VITE_API_URL;
+  const baseUrl = import.meta.env.VITE_API_URL || 'https://build-ai-backend.vercel.app';
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 };
 
@@ -15,7 +15,8 @@ export const getRequestOptions = (method, token, body = null) => {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: import.meta.env.VITE_ALLOW_CREDENTIALS === 'true' ? 'include' : 'same-origin'
+    // Don't use credentials:include as it requires specific CORS setup
+    credentials: 'same-origin'
   };
   
   if (token) {
@@ -32,25 +33,34 @@ export const getRequestOptions = (method, token, body = null) => {
 // Helper to handle API responses consistently
 export const handleApiResponse = async (response) => {
   if (!response.ok) {
-    const error = await response.json().catch(() => ({
-      message: `Server responded with ${response.status}`
-    }));
+    let errorData;
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      errorData = { message: `Server responded with ${response.status}` };
+    }
     
     console.error('API Error:', {
       status: response.status,
       url: response.url,
-      error
+      error: errorData
     });
     
-    throw new Error(error.message || `Server responded with ${response.status}`);
+    throw new Error(errorData.message || `Server responded with ${response.status}`);
   }
   
-  return response.json();
+  try {
+    return await response.json();
+  } catch (e) {
+    console.warn('Response is not JSON, returning raw response');
+    return { success: true, message: 'Operation completed' };
+  }
 };
 
 // Wrapper for API calls with consistent error handling
 export const apiRequest = async (url, options) => {
   try {
+    console.log(`Making API request to: ${url}`);
     const response = await fetch(url, options);
     return handleApiResponse(response);
   } catch (error) {

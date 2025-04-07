@@ -1,6 +1,7 @@
 import { auth } from '../firebase-config';
+import { getBaseApiUrl, getRequestOptions, apiRequest as makeApiRequest } from './apiUtils';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://build-ai-backend.vercel.app';
+const API_URL = getBaseApiUrl();
 
 /**
  * Makes an authenticated API request
@@ -27,11 +28,10 @@ export const apiRequest = async (endpoint, options = {}) => {
       ...options.headers
     };
     
-    // Make the request with credentials included
+    // Make the request - remove credentials:include to avoid CORS issues
     const response = await fetch(`${API_URL}/${endpoint.replace(/^\//, '')}`, {
       ...options,
-      headers,
-      credentials: 'include'  // Add credentials: include for CORS with authentication
+      headers
     });
     
     // Check if the response is JSON
@@ -99,7 +99,9 @@ export const updateUserPreferences = (preferences) => {
  */
 export const fetchCategories = async () => {
   try {
-    const response = await fetch(`${API_URL}/api/digests/categories/list`);
+    const url = `${API_URL}/api/digests/categories/list`;
+    console.log(`Fetching categories from: ${url}`);
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
@@ -275,22 +277,11 @@ export const addToReadHistory = async (digestId, token) => {
       throw new Error('Authentication required to update read history');
     }
     
-    const response = await fetch(`${API_URL}/api/user/history`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ digestId }),
-      credentials: 'include'  // Add credentials: include for CORS with authentication
-    });
+    const url = `${API_URL}/api/user/history`;
+    const options = getRequestOptions('POST', token, { digestId });
+    console.log(`Adding to read history: ${url}`);
     
-    if (!response.ok) {
-      throw new Error('Failed to update read history');
-    }
-    
-    const data = await response.json();
-    return data;
+    return makeApiRequest(url, options);
   } catch (error) {
     console.error('Error updating read history:', error);
     throw error;
@@ -308,21 +299,11 @@ export const fetchUserProfile = async (token) => {
       throw new Error('Authentication required to fetch user profile');
     }
     
-    const response = await fetch(`${API_URL}/api/user/profile`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: 'include'  // Add credentials: include for CORS with authentication
-    });
+    const url = `${API_URL}/api/user/profile`;
+    const options = getRequestOptions('GET', token);
+    console.log(`Fetching user profile: ${url}`);
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch user profile');
-    }
-    
-    const data = await response.json();
-    return data;
+    return makeApiRequest(url, options);
   } catch (error) {
     console.error('Error fetching user profile:', error);
     throw error;
