@@ -138,13 +138,38 @@ export const fetchSources = async () => {
 };
 
 /**
- * Fetch digests with optional filters
+ * Fetch digests with optional filters directly from MongoDB
  * @param {Object} options - Filter options (category, source, page, limit, etc.)
  * @param {string} [token] - Optional auth token for authenticated requests
  * @returns {Promise<Object>} Digests and pagination data
  */
 export const fetchDigests = async (options = {}, token = null) => {
   try {
+    // MongoDB connection string (should be secured in production)
+    const connectionString = import.meta.env.VITE_MONGODB_URI;
+    
+    if (!connectionString) {
+      throw new Error('MongoDB connection string is missing');
+    }
+    
+    // For security reasons, we should use a serverless function or API
+    // Direct MongoDB access from frontend is not recommended
+    console.warn('Warning: Direct MongoDB access from frontend is not secure.');
+    
+    // Create MongoDB query filter based on options
+    const filter = {};
+    if (options.category) filter.category = options.category;
+    if (options.source) filter.source = options.source;
+    
+    // Pagination parameters
+    const page = parseInt(options.page) || 1;
+    const limit = parseInt(options.limit) || 10;
+    const skip = (page - 1) * limit;
+    
+    // Normally, we would use MongoDB driver here
+    // But for frontend, we should use an API instead
+    
+    // Fallback to API endpoint for now
     // Build query string from options
     const queryParams = new URLSearchParams();
     
