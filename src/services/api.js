@@ -57,7 +57,7 @@ export const apiRequest = async (endpoint, options = {}) => {
  * @returns {Promise<Object>} User profile data
  */
 export const getUserProfile = () => {
-  return apiRequest('user/profile', { method: 'GET' });
+  return apiRequest('api/user/profile', { method: 'GET' });
 };
 
 /**
@@ -66,7 +66,7 @@ export const getUserProfile = () => {
  * @returns {Promise<Object>} Updated profile data
  */
 export const updateUserProfile = (profileData) => {
-  return apiRequest('user/profile', {
+  return apiRequest('api/user/profile', {
     method: 'POST',
     body: JSON.stringify(profileData)
   });
@@ -77,7 +77,7 @@ export const updateUserProfile = (profileData) => {
  * @returns {Promise<Object>} User preferences
  */
 export const getUserPreferences = () => {
-  return apiRequest('user/preferences', { method: 'GET' });
+  return apiRequest('api/user/preferences', { method: 'GET' });
 };
 
 /**
@@ -86,7 +86,7 @@ export const getUserPreferences = () => {
  * @returns {Promise<Object>} Updated preferences
  */
 export const updateUserPreferences = (preferences) => {
-  return apiRequest('user/preferences', {
+  return apiRequest('api/user/preferences', {
     method: 'POST',
     body: JSON.stringify(preferences)
   });
@@ -274,7 +274,7 @@ export const addToReadHistory = async (digestId, token) => {
       throw new Error('Authentication required to update read history');
     }
     
-    const response = await fetch(`${API_URL}/user/history`, {
+    const response = await fetch(`${API_URL}/api/user/history`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ export const fetchUserProfile = async (token) => {
       throw new Error('Authentication required to fetch user profile');
     }
     
-    const response = await fetch(`${API_URL}/user/profile`, {
+    const response = await fetch(`${API_URL}/api/user/profile`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
