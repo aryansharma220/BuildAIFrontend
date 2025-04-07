@@ -21,13 +21,18 @@ function FilterBar() {
       try {
         const [categoriesData, sourcesData] = await Promise.all([
           fetchCategories(),
-          fetchSources()
+          fetchSources().catch(err => {
+            console.error('Error fetching sources:', err);
+            return [];
+          })
         ]);
         
-        setCategories(categoriesData);
-        setSources(sourcesData);
+        setCategories(categoriesData || []);
+        setSources(sourcesData || []);
       } catch (error) {
         console.error('Error fetching filters:', error);
+        setCategories([]);
+        setSources([]);
       } finally {
         setLoading(false);
       }
