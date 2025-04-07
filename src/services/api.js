@@ -18,8 +18,9 @@ export const apiRequest = async (endpoint, options = {}) => {
       throw new Error('User not authenticated');
     }
     
-    // Get the ID token
+    // Get the ID token with force refresh to ensure it's valid
     const token = await user.getIdToken(true);
+    console.log(`Token available: ${!!token}`, `Token length: ${token?.length || 0}`);
     
     // Set up headers with authentication
     const headers = {
@@ -28,22 +29,35 @@ export const apiRequest = async (endpoint, options = {}) => {
       ...options.headers
     };
     
-    // Make the request - remove credentials:include to avoid CORS issues
-    const response = await fetch(`${API_URL}/${endpoint.replace(/^\//, '')}`, {
+    // Make the request with proper URL handling
+    const url = `${API_URL}/${endpoint.replace(/^\//, '')}`;
+    console.log(`Making authenticated request to: ${url}`);
+    
+    const response = await fetch(url, {
       ...options,
-      headers
+      headers,
+      mode: 'cors' // Explicitly set CORS mode
     });
     
     // Check if the response is JSON
     const contentType = response.headers.get('content-type');
-    const data = contentType && contentType.includes('application/json') 
-      ? await response.json() 
-      : await response.text();
+    let data;
+    
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+    } catch (parseError) {
+      console.error('Error parsing response:', parseError);
+      data = { error: 'Failed to parse response' };
+    }
     
     // Handle non-200 responses
     if (!response.ok) {
       console.error(`API Error: ${response.status}`, data);
-      throw new Error(data.message || data.error || 'API request failed');
+      throw new Error(data.message || data.error || `API request failed with status ${response.status}`);
     }
     
     return data;
