@@ -165,8 +165,8 @@ export const fetchDigests = async (options = {}, token = null) => {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Make the request
-    const response = await fetch(`${API_URL}/digests?${queryParams.toString()}`, {
+    // Make the request with the correct endpoint path
+    const response = await fetch(`${API_URL}/api/digests?${queryParams.toString()}`, {
       method: 'GET',
       headers
     });
@@ -205,8 +205,8 @@ export const fetchPersonalizedDigests = async (options = {}, token) => {
       }
     });
     
-    // Make the request
-    const response = await fetch(`${API_URL}/digests/personalized?${queryParams.toString()}`, {
+    // Make the request with the correct endpoint path
+    const response = await fetch(`${API_URL}/api/digests/personalized?${queryParams.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -244,8 +244,8 @@ export const fetchDigestById = async (id, token = null) => {
       headers['Authorization'] = `Bearer ${token}`;
     }
     
-    // Make the request
-    const response = await fetch(`${API_URL}/digests/${id}`, {
+    // Make the request with the correct endpoint path
+    const response = await fetch(`${API_URL}/api/digests/${id}`, {
       method: 'GET',
       headers
     });
