@@ -89,14 +89,15 @@ function UserPreferences() {
         notificationsEnabled
       };
       
-      await updateUserPreferences(updatedPreferences, userToken);
+      // Use the previously fixed API call
+      await updateUserPreferences(updatedPreferences);
       setSaveSuccess(true);
       toast.success('Preferences saved successfully!');
       
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      toast.error('Failed to save preferences');
-      console.error(err);
+      console.error('Error saving preferences:', err);
+      toast.error('Failed to save preferences. Please try again.');
     } finally {
       setSaving(false);
     }
